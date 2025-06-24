@@ -1,0 +1,205 @@
+#include<stdio.h>
+#include<string.h>
+# define MAX 100
+typedef struct{
+    int number; //number of transaction 
+    char type[50]; //income or expense
+    float amount; //amount of money spend
+    char category[20]; //category like healthcare,travelling,food etc..
+    char date[10]; //YYYY-MM-DD
+}transaction;
+void addtransaction(transaction transactions[],int *count){
+    if(*count>=MAX){
+        printf("Transaction list is full \n"); //if the daily transaction list is full i.e.100
+        return;
+    }
+    transaction t;
+    t.number=*count+1;//counts or take record of number of trancations
+    printf("Enter type  (INCOME OR EXPENSE):");
+    scanf("%s",&t.type);
+    printf("Enter amount:");
+    scanf("%f",&t.amount);
+    printf("Enter Category(like:Travelling,food,medicines,snacks,bussiness,other expenditure):");
+    scanf("%s",&t.category);
+    printf("enter date(YYYY-MM-DD):");
+    scanf("%s",&t.date);
+    transactions[*count]=t;
+    (*count)++;
+    printf("transaction added successfully\n");
+}
+void displayTransactions( transaction transactions[], int count) {
+    printf("%d",count);
+    if (count == 0) {
+        printf("No transactions to display.\n");
+        return;
+    }
+    
+    printf("\nID | Type     |   Amount | Category     | Date\n");
+    printf("--------------------------------------------------------\n");
+    for (int i = 0; i < count; i++) {
+        printf("%2d | %-8s | %-8.2f | %-12s | %s\n",
+            transactions[i].number,
+            transactions[i].type,
+            transactions[i].amount,
+            transactions[i].category,
+            transactions[i].date);
+    }
+            
+}
+float calculatebalance(transaction transactions[],int count){
+    float balance=0.0;
+    for(int i=0;i<count;i++){
+        if(strcmp(transactions[i].type,"income")==0){
+            balance+=transactions[i].amount;
+        }
+        else if(strcmp(transactions[i].type,"expense")==0){
+            balance-=transactions[i].amount;
+        }
+    }
+    printf("Your balance is:%f",balance);
+
+}
+void deletetransaction(transaction transactions[],int *count,int id){
+    int found=0;
+    for(int i=0;i<*count;i++){
+        if(transactions[i].number=id){
+            found=1;
+            for(int j=i;j<*count;j++){
+                transactions[j]=transactions[j+1];
+                transactions[j].number=j+1;
+            }
+            (*count)--;
+            printf("transaction deleted \n");
+            break;
+        }
+    if(!found){
+        printf("id not found");
+    }
+    }
+}
+void saveTransactionsToFile(transaction transactions[], int count) {
+    FILE *fp = fopen("transactions.txt", "w");
+    if (fp == NULL) {
+        printf("Error opening file for writing.\n");
+        return;
+    }
+
+    for (int i = 0; i < count; i++) {
+        fprintf(fp, "%d %s %f %s %s\n",
+                transactions[i].number,
+                transactions[i].type,
+                transactions[i].amount,
+                transactions[i].category,
+                transactions[i].date);
+    }
+
+    fclose(fp);
+}
+void loadTransactionsFromFile(transaction transactions[], int *count) {
+    FILE *fp = fopen("transactions.txt", "r");
+    if (fp == NULL) {
+        printf("No previous transactions found.\n");
+        *count = 0;
+        return;
+    }
+
+    *count = 0;
+    while (fscanf(fp, "%d %s %f %s %s",
+                  &transactions[*count].number,
+                  transactions[*count].type,
+                  &transactions[*count].amount,
+                  transactions[*count].category,
+                  transactions[*count].date) == 5) {
+        (*count)++;
+    }
+
+    fclose(fp);
+}
+void exportReceipt(transaction transactions[], int count) {
+    FILE *fp = fopen("receipt.txt", "w");
+    if (fp == NULL) {
+        printf("Error creating receipt file.\n");
+        return;
+    }
+
+    fprintf(fp, "-------- PERSONAL FINANCE RECEIPT --------\n");
+    fprintf(fp, "ID | Type     | Amount   | Category       | Date\n");
+    fprintf(fp, "--------------------------------------------------\n");
+
+    for (int i = 0; i < count; i++) {
+        fprintf(fp, "%2d | %-8s | %-8.2f | %-13s | %s\n",
+                transactions[i].number,
+                transactions[i].type,
+                transactions[i].amount,
+                transactions[i].category,
+                transactions[i].date);
+    }
+
+    float balance = 0.0;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(transactions[i].type, "income") == 0)
+            balance += transactions[i].amount;
+        else if (strcmp(transactions[i].type, "expense") == 0)
+            balance -= transactions[i].amount;
+    }
+
+    fprintf(fp, "--------------------------------------------------\n");
+    fprintf(fp, "Current Balance: %.2f\n", balance);
+    fprintf(fp, "----------------------------------------------\n");
+
+    fclose(fp);
+    printf("Receipt saved as 'receipt.txt'\n");
+}
+int main(){
+    transaction transactions[MAX];
+    int count,id,choice;
+    int password;
+    loadTransactionsFromFile(transactions, &count); // Load data at start
+    printf("Enter your 4 digit password to use personal finance tracker:");
+    scanf("%d",&password);
+    if(password==1234){
+    do{
+        printf("\n--PERSONAL FINANCE TRACKER--\n");
+        printf("Enter 1 to add transaction\n");
+        printf("Enter 2 to view transaction\n");
+        printf("Enter 3 to check balance\n");
+        printf("Enter 4 to delete transaction\n");
+        printf("Enter 5 to exit tracker\n");
+        printf("Enter 6 to export transactions as receipt\n");
+        scanf("%d",&choice);
+
+        switch(choice){
+            case 1:
+             addtransaction(transactions,&count);
+             saveTransactionsToFile(transactions, count);
+             break;
+            case 2:
+             displayTransactions(transactions,count);
+             break;
+            case 3:
+             calculatebalance(transactions,count);
+             break;
+            case 4:
+             printf("Enter id of transaction you want to delete:");
+             scanf("%d",&id);
+             deletetransaction(transactions,&count,id);
+             saveTransactionsToFile(transactions, count);
+             break;
+            case 5:
+             printf("Thankyou for exiting");
+             break;
+            case 6:
+             exportReceipt(transactions, count);
+             break;
+            default:
+             printf("invalid choice");
+             break;
+        }
+    } while(choice!=5);
+      
+    return 0;
+}
+else{
+    printf("password invalid");
+}
+}
